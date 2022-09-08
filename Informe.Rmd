@@ -1,0 +1,238 @@
+---
+title: "Informe"
+author: "Alfredo Quezada"
+date: '2022-09-07'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Analisis exploratorio de la categoria y de la colunma texto: 
+
+```{r}
+library(wordcloud2)
+library(ggplot2)
+
+
+#lectura y limpieza del data set 
+data<- read.csv('train.csv')
+
+data$text<-gsub("#[A-Za-z0-9]+|@[A-Za-z0-9]+|\\w+(?:\\.\\w+)*/\\S+", "", data$text)
+data$text<-toupper(data$text)
+data$text<-gsub("HTTP://","",data$text)
+data$text<-gsub("HTTPS://","",data$text)
+data$text<-gsub("[^\x01-\x7F]", "",data$text)
+data$text<-gsub("B&amp;N", "",data$text)
+data$text<-gsub("#", "",data$text)
+data$text<-gsub('(s+)(A|AN|AND|THE|I)(s+)', '', data$text)
+data$text<-gsub(':', '', data$text)
+data$text<-gsub("'", '', data$text)
+data$text<-gsub("--|", '', data$text)
+data$text<-gsub('[[:punct:]]', '', data$text)
+data$text<-gsub('http",1', '', data$text)
+data$text<-gsub('http', '', data$text)
+data$text<-gsub('http",0', '', data$text)
+data$text<-gsub(' ",0 ', '', data$text)
+data$text<-gsub(' ",1 ', '', data$text)
+data$id<-toupper(data$id)
+data$keyword<-toupper(data$keyword)
+data$location<-toupper(data$location)
+data[data == ""]<-NA
+
+# Frecuencia de los tweets categorizados como NO CATASTROFICOS
+freq<-table(data$keyword, useNA = 'no')
+
+
+# Nube de palabras de esa categoria
+wordcloud2(data = freq, size = 0.15, shape = "cloud",
+           color="random-dark", ellipticity = 0.5)
+
+
+# Histograma
+hist(x = freq, main = "Histograma De Palabras Más Repetidas", 
+     xlab = "Frecuencia", ylab = "",
+     col = "ivory")
+no_disaster<-subset(x = data, subset = target == 0, select = c("keyword"))
+freq_no_disaster<-table(no_disaster$keyword)
+tabla_ordenada1<-freq_no_disaster[order(freq_no_disaster, decreasing = TRUE, na.last = TRUE)]
+
+
+#View(tabla_ordenada1)
+h1<-head(tabla_ordenada1)
+h1<-as.data.frame(h1)
+
+
+# Nube de palabras categorizadas como NO DESASTRES
+wordcloud2(data = freq_no_disaster, size = 0.2, shape = "cloud",
+           color="random-dark", ellipticity = 0.5)
+
+
+# Grafica de las palabras claves de NO DESASTRES
+ggplot(data=h1, aes(x=Var1, y=Freq, fill=Var1)) +
+  geom_bar(stat="identity", position=position_dodge())+
+  geom_text(aes(label=as.integer(Freq)), vjust=1.6, color="black",
+            position = position_dodge(0.9), size=3.5)+
+  labs(title="No Disaster Tweets",x='Palabra', y="Frecuencia")+
+  theme(legend.position="none")
+disaster<-subset(x = data, subset = target == 1, select = c("keyword"))
+freq_disaster<-table(disaster$keyword)
+tabla_ordenada2<-freq_disaster[order(freq_disaster, decreasing = TRUE, na.last = TRUE)]
+h2<-head(tabla_ordenada2)
+h2<-as.data.frame(h2)
+
+
+# Grafica de las palabras claves categorizadas como DESASTRES
+ggplot(data=h2, aes(x=Var1, y=Freq, fill=Var1)) +
+  geom_bar(stat="identity", position=position_dodge())+
+  geom_text(aes(label=as.integer(Freq)), vjust=1.6, color="black",
+            position = position_dodge(0.9), size=3.5)+
+  labs(title="Disaster Tweets",x='Palabra', y="Frecuencia")+
+  theme(legend.position="none")
+
+
+# Nube de palabras claves categorizadas como DESASTRES
+wordcloud2(data = freq_disaster, size = 0.2, shape = "cloud",
+           color="random-dark", ellipticity = 0.5)
+
+#############################################################################################################
+
+```
+
+
+
+
+```{r include=FALSE}
+## Analisis exploratorio de la columna text
+### Analisis de texto
+library("tm")
+library("SnowballC")
+library("wordcloud")
+library("RColorBrewer")
+library("syuzhet")
+library("ggplot2")
+data<- read.csv('train.csv')
+# Limpieza del texto
+data$text<-gsub("#[A-Za-z0-9]+|@[A-Za-z0-9]+|\\w+(?:\\.\\w+)*/\\S+", "", data$text)
+data$text<-toupper(data$text)
+data$text<-gsub("HTTP://","",data$text)
+data$text<-gsub("HTTPS://","",data$text)
+data$text<-gsub("[^\x01-\x7F]", "",data$text)
+data$text<-gsub("B&amp;N", "",data$text)
+data$text<-gsub("#", "",data$text)
+data$text<-gsub('(s+)(A|AN|AND|THE|I)(s+)', '', data$text)
+data$text<-gsub(':', '', data$text)
+data$text<-gsub("'", '', data$text)
+data$text<-gsub("--|", '', data$text)
+data$text<-gsub('[[:punct:]]', '', data$text)
+data$id<-toupper(data$id)
+data$keyword<-toupper(data$keyword)
+data$location<-toupper(data$location)
+data[data == ""]<-NA
+TextDoc <- Corpus(VectorSource(data$text))
+toSpace <- content_transformer(function (x , pattern ) gsub(pattern, " ", x))
+TextDoc <- tm_map(TextDoc, toSpace, "/")
+TextDoc <- tm_map(TextDoc, toSpace, "@")
+TextDoc <- tm_map(TextDoc, toSpace, "\\|")
+TextDoc <- tm_map(TextDoc, content_transformer(tolower))
+TextDoc <- tm_map(TextDoc, removeNumbers)
+TextDoc <- tm_map(TextDoc, removeWords, stopwords("english"))
+TextDoc <- tm_map(TextDoc, removeWords, c("like", "just", "get",'will','new','now','via','dont','one')) 
+TextDoc <- tm_map(TextDoc, removePunctuation)
+TextDoc <- tm_map(TextDoc, stripWhitespace)
+TextDoc <- tm_map(TextDoc, stemDocument)
+TextDoc_dtm <- TermDocumentMatrix(TextDoc)
+dtm_m <- as.matrix(TextDoc_dtm)
+dtm_v <- sort(rowSums(dtm_m),decreasing=TRUE)
+dtm_d <- data.frame(word = names(dtm_v),freq=dtm_v)
+
+```
+
+
+
+
+
+```{r}
+#Palabras mas usadas o frecuentes 
+head(dtm_d)
+```
+
+Como podemos ver, la palabra **fire**, es la que se encuentra en primer lugar, como la que se mas encuentra, seguida la palaba **amp** y sigue la palabra **bomb**
+
+
+
+```{r}
+#  Grafico de las palabras mas frecuentes:
+barplot(dtm_d[1:10,]$freq, las = 2, names.arg = dtm_d[1:10,]$word,
+        col ="lightgreen", main ="Top 10 palabras mas frecuentes",
+        ylab = "Frecuencia")
+set.seed(1234)
+wordcloud(words = dtm_d$word, freq = dtm_d$freq, min.freq = 5,
+          max.words=100, random.order=FALSE, rot.per=0.40, 
+          colors=brewer.pal(8, "Dark2"))
+
+```
+
+ Visto de una forma mucho mas visual, esta seria la grafica de las palabras que se encuentran como mas frecuentes, en concreto las 10 primeras palabras. 
+
+
+```{r include=FALSE}
+
+findAssocs(TextDoc_dtm, terms = c("fire","amp","bomb"), corlimit = 0.25)			
+findAssocs(TextDoc_dtm, terms = findFreqTerms(TextDoc_dtm, lowfreq = 50), corlimit = 0.25)
+# regular sentiment score using get_sentiment() function and method of your choice
+# please note that different methods may have different scales
+syuzhet_vector <- get_sentiment(data$text, method="syuzhet")
+# see the first row of the vector
+head(syuzhet_vector)
+# see summary statistics of the vector
+summary(syuzhet_vector)
+# bing
+bing_vector <- get_sentiment(data$text, method="bing")
+head(bing_vector)
+summary(bing_vector)
+#affin
+afinn_vector <- get_sentiment(data$text, method="afinn")
+head(afinn_vector)
+summary(afinn_vector)
+#compare the first row of each vector using sign function
+rbind(
+  sign(head(syuzhet_vector)),
+  sign(head(bing_vector)),
+  sign(head(afinn_vector))
+)
+d<-get_nrc_sentiment(data$text)
+# head(d,10) - to see top 10 lines of the get_nrc_sentiment dataframe
+head (d,10)
+#transpose
+td<-data.frame(t(d))
+#The function rowSums computes column sums across rows for each level of a grouping variable.
+td_new <- data.frame(rowSums(td[2:253]))
+#Transformation and cleaning
+names(td_new)[1] <- "count"
+td_new <- cbind("sentiment" = rownames(td_new), td_new)
+rownames(td_new) <- NULL
+td_new2<-td_new[1:8,]
+
+```
+
+
+
+```{r}
+#Grafico de sentimientos 
+barplot(
+  sort(colSums(prop.table(d[, 1:8]))), 
+  horiz = TRUE, 
+  cex.names = 0.7, 
+  las = 1, 
+  main = "Emociones", xlab="Porcentaje"
+)
+
+
+```
+
+
+
+Al final podemos observar que el sentimiento que mayor influencia tiene, o mayor incidencia se encuentra, es el del miedo, seguido de la tristeza, el enojo, la confianza y demas sentimientos, el miedo y la tristreza realmente si no analizamos desde un punto de vista un poco desapacionado, tiene sentido que sean los que mas se encuentren, ya que si lo pensamos en una red social como twitter, donde la mayoria de personas se expresa, es normal encontrar este tipo de sentimiento como los principales. 
+
