@@ -9,7 +9,9 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Analisis exploratorio de la categoria y de la colunma texto: 
+# Analisis exploratorio: 
+
+Lo primero que haremos es el analisis exploratorio del data set, pero antes de entrar de lleno a eso, lo primero sera limpiar lo mas que se pueda el data set: 
 
 ```{r}
 library(wordcloud2)
@@ -41,19 +43,46 @@ data$keyword<-toupper(data$keyword)
 data$location<-toupper(data$location)
 data[data == ""]<-NA
 
-# Frecuencia de los tweets categorizados como NO CATASTROFICOS
+```
+
+
+Como podemos ver, lo que se busca es eliminar valores en la variable **texto**, de cierta forma dejar lo mas sola posible la palabra que se encuentra, para ello se eliminaron, enlaces, espacios, numeros y caracteres especiales como se puede observar en las instrucciones anteriores, asi como tambien se pretenden poner en un formato de mayusculas, todas las palabras de la variable, hecho esto, podemos pasar a el analisis exploratorio. 
+
+
+```{r}
 freq<-table(data$keyword, useNA = 'no')
+freq
+```
 
 
-# Nube de palabras de esa categoria
+Aca podemos ver, en forma de tabla, las palabras con mayor frecuencia dentro del data set.
+
+
+```{r}
+
+# Nube de palabras
 wordcloud2(data = freq, size = 0.15, shape = "cloud",
            color="random-dark", ellipticity = 0.5)
+```
 
 
+Aca podmeos verlo de otra forma, podemos ver la nube de palabras de la categoria. 
+
+
+```{r}
 # Histograma
 hist(x = freq, main = "Histograma De Palabras Más Repetidas", 
      xlab = "Frecuencia", ylab = "",
      col = "ivory")
+
+
+```
+
+
+Representacion visual de las palabras mas repetidas. 
+
+
+```{r include=FALSE}
 no_disaster<-subset(x = data, subset = target == 0, select = c("keyword"))
 freq_no_disaster<-table(no_disaster$keyword)
 tabla_ordenada1<-freq_no_disaster[order(freq_no_disaster, decreasing = TRUE, na.last = TRUE)]
@@ -63,11 +92,21 @@ tabla_ordenada1<-freq_no_disaster[order(freq_no_disaster, decreasing = TRUE, na.
 h1<-head(tabla_ordenada1)
 h1<-as.data.frame(h1)
 
+```
+
+
+```{r}
 
 # Nube de palabras categorizadas como NO DESASTRES
 wordcloud2(data = freq_no_disaster, size = 0.2, shape = "cloud",
            color="random-dark", ellipticity = 0.5)
+```
 
+
+Aca podemos ver la nube de palabras de la categoria **NO DESASTRES**
+
+
+```{r}
 
 # Grafica de las palabras claves de NO DESASTRES
 ggplot(data=h1, aes(x=Var1, y=Freq, fill=Var1)) +
@@ -82,8 +121,13 @@ tabla_ordenada2<-freq_disaster[order(freq_disaster, decreasing = TRUE, na.last =
 h2<-head(tabla_ordenada2)
 h2<-as.data.frame(h2)
 
+```
 
-# Grafica de las palabras claves categorizadas como DESASTRES
+
+Asi como tambien, visto de una forma mucho mas generica, esta seria la grafica de las palabras clave para la variable de **NO DESASTRES**, en la cual podemos ver que resaltan **HARM**, **ARMAGEDON** entre otras. 
+
+
+```{r}
 ggplot(data=h2, aes(x=Var1, y=Freq, fill=Var1)) +
   geom_bar(stat="identity", position=position_dodge())+
   geom_text(aes(label=as.integer(Freq)), vjust=1.6, color="black",
@@ -91,17 +135,26 @@ ggplot(data=h2, aes(x=Var1, y=Freq, fill=Var1)) +
   labs(title="Disaster Tweets",x='Palabra', y="Frecuencia")+
   theme(legend.position="none")
 
+```
 
-# Nube de palabras claves categorizadas como DESASTRES
+
+De igal forma, pero ahora para las palabras clave categorizadas como: **DESASTRES**, en las que se pueden ven **DEBRIS**, **OILSPILL**, entre otros.
+
+
+```{r}
+
 wordcloud2(data = freq_disaster, size = 0.2, shape = "cloud",
            color="random-dark", ellipticity = 0.5)
-
-#############################################################################################################
 
 ```
 
 
+Y por ultimo, podemos ver la nube de palabras de la categoria **DESASTRES**. 
 
+
+## Analsis de sentimientos:
+
+Para esta parte, lo que se busco fue asociar palabras a sentiemientos, por lo cual, se obtuvo lo siguiente:
 
 ```{r include=FALSE}
 ## Analisis exploratorio de la columna text
